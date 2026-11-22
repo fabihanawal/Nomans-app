@@ -1,0 +1,230 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle managed in the rent-a-car fleet (e.g., Toyota X Corolla).",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner/manager.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Vehicle name, e.g. Toyota X Corolla.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "registrationNumber": {
+          "type": "string",
+          "description": "Vehicle registration plate number.",
+          "minLength": 0,
+          "maxLength": 40
+        },
+        "modelYear": {
+          "type": "string",
+          "description": "Optional model or year note.",
+          "minLength": 0,
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": ["ownerId", "name", "registrationNumber", "modelYear", "createdAt", "updatedAt"]
+    },
+    "Driver": {
+      "title": "Driver",
+      "description": "A driver associated with the rent-a-car fleet.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner/manager.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Driver full name.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "phone": {
+          "type": "string",
+          "description": "Driver mobile phone number.",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "licenseNumber": {
+          "type": "string",
+          "description": "Driving license number.",
+          "minLength": 0,
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "description": "Driver active status.",
+          "enum": ["সক্রিয়", "বিরতি"],
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or address.",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "name",
+        "phone",
+        "licenseNumber",
+        "status",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "TripEntry": {
+      "title": "TripEntry",
+      "description": "A single daily trip, income, fuel, maintenance, or document expense entry.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner/manager.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Document ID of the associated vehicle.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "vehicleName": {
+          "type": "string",
+          "description": "Display name of the vehicle at time of entry.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "driverId": {
+          "type": "string",
+          "description": "Optional document ID of the driver who completed the trip (empty if unassigned).",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "driverName": {
+          "type": "string",
+          "description": "Optional display name of the driver.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "date": {
+          "type": "string",
+          "description": "Entry date in YYYY-MM-DD format.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "place": {
+          "type": "string",
+          "description": "Destination or expense description.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "description": "Entry category in Bengali.",
+          "enum": [
+            "ট্রিপ ভাড়া",
+            "জ্বালানি [LPG, Octane, CNG]",
+            "মেরামত ও পার্টস",
+            "কাগজপত্র ও ট্যাক্স",
+            "অন্যান্য"
+          ],
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "fair": {
+          "type": "number",
+          "description": "Trip fare or income amount in BDT."
+        },
+        "cost": {
+          "type": "number",
+          "description": "Expense cost amount in BDT."
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Optional notes, meter reading, or driver remarks.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "vehicleId",
+        "vehicleName",
+        "driverId",
+        "driverName",
+        "date",
+        "place",
+        "category",
+        "fair",
+        "cost",
+        "remarks",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/Vehicle" },
+      "description": "Stores vehicles managed by authenticated owners."
+    },
+    "/drivers/{driverId}": {
+      "schema": { "$ref": "#/entities/Driver" },
+      "description": "Stores driver profiles and PII isolated strictly to the owning user."
+    },
+    "/trips/{tripId}": {
+      "schema": { "$ref": "#/entities/TripEntry" },
+      "description": "Stores daily trip income, fuel, maintenance, and document expenses."
+    }
+  }
+}

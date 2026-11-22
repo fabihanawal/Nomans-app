@@ -1,0 +1,6 @@
+{
+  "name": "গাড়ির হিসাব - রেন্ট-এ-কার ম্যানেজার",
+  "description": "Toyota X Corolla সহ সকল গাড়ির দৈনন্দিন ট্রিপ, আয়-ব্যয়, রক্ষণাবেক্ষণ এবং চলমান ব্যালেন্সের হিসাব রাখার আধুনিক বাংলা ওয়েব অ্যাপ্লিকেশন।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

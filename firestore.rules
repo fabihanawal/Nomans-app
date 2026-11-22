@@ -1,0 +1,215 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(data) {
+      return isVerifiedUser() && data.ownerId == request.auth.uid;
+    }
+
+    // --- Entity Validation Blueprints ---
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'registrationNumber', 'modelYear', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'registrationNumber', 'modelYear', 'createdAt', 'updatedAt'])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 80
+        && data.registrationNumber is string
+        && data.registrationNumber.size() <= 40
+        && data.modelYear is string
+        && data.modelYear.size() <= 20
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDriver(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'phone', 'licenseNumber', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'phone', 'licenseNumber', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 80
+        && data.phone is string
+        && data.phone.size() <= 30
+        && data.licenseNumber is string
+        && data.licenseNumber.size() <= 40
+        && data.status is string
+        && data.status.size() >= 1
+        && data.status.size() <= 20
+        && data.status in ['সক্রিয়', 'বিরতি']
+        && data.notes is string
+        && data.notes.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll([
+          'ownerId', 'vehicleId', 'vehicleName', 'driverId', 'driverName',
+          'date', 'place', 'category', 'fair', 'cost', 'remarks', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'vehicleId', 'vehicleName', 'driverId', 'driverName',
+          'date', 'place', 'category', 'fair', 'cost', 'remarks', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string
+        && data.ownerId.size() >= 1
+        && data.ownerId.size() <= 128
+        && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.ownerId == request.auth.uid
+        && data.vehicleId is string
+        && data.vehicleId.size() >= 1
+        && data.vehicleId.size() <= 128
+        && data.vehicleId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.vehicleName is string
+        && data.vehicleName.size() >= 1
+        && data.vehicleName.size() <= 80
+        && data.driverId is string
+        && data.driverId.size() <= 128
+        && (data.driverId == '' || data.driverId.matches('^[a-zA-Z0-9_\\-]+$'))
+        && data.driverName is string
+        && data.driverName.size() <= 80
+        && data.date is string
+        && data.date.size() == 10
+        && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.place is string
+        && data.place.size() >= 1
+        && data.place.size() <= 160
+        && data.category is string
+        && data.category.size() >= 1
+        && data.category.size() <= 60
+        && data.category in [
+          'ট্রিপ ভাড়া',
+          'জ্বালানি [LPG, Octane, CNG]',
+          'মেরামত ও পার্টস',
+          'কাগজপত্র ও ট্যাক্স',
+          'অন্যান্য'
+        ]
+        && data.fair is number
+        && data.fair >= 0
+        && data.cost is number
+        && data.cost >= 0
+        && data.remarks is string
+        && data.remarks.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /vehicles/{vehicleId} {
+      allow get: if isValidId(vehicleId) && isOwner(existing());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(vehicleId)
+        && isValidVehicle(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(vehicleId)
+        && isValidVehicle(incoming())
+        && isOwner(existing())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'registrationNumber', 'modelYear', 'updatedAt'
+        ]);
+      allow delete: if isValidId(vehicleId) && isOwner(existing());
+    }
+
+    match /drivers/{driverId} {
+      allow get: if isValidId(driverId) && isOwner(existing());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(driverId)
+        && isValidDriver(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(driverId)
+        && isValidDriver(incoming())
+        && isOwner(existing())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'phone', 'licenseNumber', 'status', 'notes', 'updatedAt'
+        ]);
+      allow delete: if isValidId(driverId) && isOwner(existing());
+    }
+
+    match /trips/{tripId} {
+      allow get: if isValidId(tripId) && isOwner(existing());
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(tripId)
+        && isValidTrip(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/vehicles/$(incoming().vehicleId))
+        && get(/databases/$(database)/documents/vehicles/$(incoming().vehicleId)).data.ownerId == request.auth.uid
+        && (
+          incoming().driverId == ''
+          || (
+            exists(/databases/$(database)/documents/drivers/$(incoming().driverId))
+            && get(/databases/$(database)/documents/drivers/$(incoming().driverId)).data.ownerId == request.auth.uid
+          )
+        );
+      allow update: if isVerifiedUser()
+        && isValidId(tripId)
+        && isValidTrip(incoming())
+        && isOwner(existing())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/vehicles/$(incoming().vehicleId))
+        && get(/databases/$(database)/documents/vehicles/$(incoming().vehicleId)).data.ownerId == request.auth.uid
+        && (
+          incoming().driverId == ''
+          || (
+            exists(/databases/$(database)/documents/drivers/$(incoming().driverId))
+            && get(/databases/$(database)/documents/drivers/$(incoming().driverId)).data.ownerId == request.auth.uid
+          )
+        )
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'vehicleId', 'vehicleName', 'driverId', 'driverName', 'date',
+          'place', 'category', 'fair', 'cost', 'remarks', 'updatedAt'
+        ]);
+      allow delete: if isValidId(tripId) && isOwner(existing());
+    }
+  }
+}
